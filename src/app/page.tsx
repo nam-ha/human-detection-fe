@@ -1,101 +1,123 @@
+"use client"; // only needed if you're using Next.js app directory and want client-side interactivity
+
 import Image from "next/image";
+import { useState } from "react";
 
-export default function Home() {
+function Home() {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [outputImage, setOutputImage] = useState<string | null>(null);
+  const [numHumans, setNumHumans] = useState<number | null>(null);
+  const [confidence_threshold, setConfidenceThreshold] = useState<number>(0.5)
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) 
+  {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function handleConfidenceThresholdChange(event: React.ChangeEvent<HTMLInputElement>) 
+  {
+    const threshold = event.target.value;
+    
+    if (threshold === "" || !isNaN(Number(threshold))) {
+      setConfidenceThreshold(Number(threshold));
+    }
+  }
+
+  async function handleDetect() {
+    if (!preview) 
+    {
+      alert("Please select image first!");
+      return;
+    }
+
+    const requestBody = {
+      b64image: preview,
+      confidence_threshold: confidence_threshold
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setOutputImage("data:image/png;base64," + result.b64image as string);
+        setNumHumans(result.num_humans);
+      } else {
+        console.error("Failed to get prediction");
+      }
+    } catch (error) {
+      console.error("Error while calling the API:", error);
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="h-screen p-6">
+      <main className="h-full flex w-full gap-6">
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Input Column */}
+        <div className="flex flex-col items-center w-full border border-gray-300 p-4 rounded-lg shadow-md">
+          {/* Title for this section */}
+          <div className="flex-col w-full mb-4">
+            <h1 className="text-xl font-bold"> Upload Image </h1>
+          </div>
+
+          <div className = "flex-col h-full w-full flex">
+            <div className = "h-full w-full flex-col"> 
+              {preview && <img src={preview} alt="Preview" style={{ maxWidth: "100%", height: "auto" }} />}
+            </div>
+            <div className = "flex-row justify-center">
+
+            </div>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+          </div>
+
+          {/* Detect button */}
+          <div>
+            <label className = "text-lg font-bold"> Confidence Threshold: </label>
+            <input className = "bg-black text-white" type = "number" step = {0.01} max={1.0} min={0.0} onChange = {handleConfidenceThresholdChange} value = {confidence_threshold}/>
+            <button 
+              onClick={handleDetect}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+              Detect
+            </button>
+          </div>
+        </div>
+
+        {/* Output Column */}
+        
+
+        <div className="flex flex-col items-center w-full border border-gray-300 p-4 rounded-lg shadow-md">
+          <div className="flex-col w-full mb-4">
+            <h1 className="text-xl font-bold"> Result </h1>
+          </div>
+
+          {/* Image canvas placeholder */}
+          <div className="h-full w-full flex-col">
+            {outputImage && <img src={outputImage} alt="Result" style={{ maxWidth: "100%", height: "auto" }} />}
+          </div>
+
+          {/* Image analysis result */}
+          <p className="text-lg font-semibold"> Number of people in the image: <span className="text-lg">{numHumans}</span> </p>
+          
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
+
+export default Home;
