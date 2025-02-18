@@ -1,6 +1,5 @@
-"use client"; // only needed if you're using Next.js app directory and want client-side interactivity
+"use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
 function Home() {
@@ -71,7 +70,6 @@ function Home() {
 
         {/* Input Column */}
         <div className="flex flex-col items-center w-full border border-gray-300 p-4 rounded-lg shadow-md">
-          {/* Title for this section */}
           <div className="flex-col w-full mb-4">
             <h1 className="text-xl font-bold"> Upload Image </h1>
           </div>
@@ -86,7 +84,6 @@ function Home() {
             <input type="file" accept="image/*" onChange={handleFileChange} />
           </div>
 
-          {/* Detect button */}
           <div>
             <label className = "text-lg font-bold"> Confidence Threshold: </label>
             <input className = "bg-black text-white" type = "number" step = {0.01} max={1.0} min={0.0} onChange = {handleConfidenceThresholdChange} value = {confidence_threshold}/>
@@ -99,19 +96,15 @@ function Home() {
         </div>
 
         {/* Output Column */}
-        
-
         <div className="flex flex-col items-center w-full border border-gray-300 p-4 rounded-lg shadow-md">
           <div className="flex-col w-full mb-4">
             <h1 className="text-xl font-bold"> Result </h1>
           </div>
 
-          {/* Image canvas placeholder */}
           <div className="h-full w-full flex-col">
             {outputImage && <img src={outputImage} alt="Result" style={{ maxWidth: "100%", height: "auto" }} />}
           </div>
-
-          {/* Image analysis result */}
+          
           <p className="text-lg font-semibold"> Number of people in the image: <span className="text-lg">{numHumans}</span> </p>
           
         </div>
