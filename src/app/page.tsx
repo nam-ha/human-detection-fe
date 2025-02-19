@@ -57,7 +57,9 @@ function Home() {
         setOutputImage("data:image/png;base64," + result.b64image as string);
         setNumHumans(result.num_humans);
       } else {
-        console.error("Failed to get prediction");
+        const error = await response.json();
+        const errorMessage = error.detail.map((err: any) => err.msg).join("\n");
+        alert(errorMessage);
       }
     } catch (error) {
       console.error("Error while calling the API:", error);
